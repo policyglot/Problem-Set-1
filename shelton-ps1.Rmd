@@ -1,0 +1,10 @@
+---
+title: "Problem Set 1"
+author: "Adam Shelton"
+date: "10/11/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
