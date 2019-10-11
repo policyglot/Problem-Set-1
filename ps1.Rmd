@@ -1,6 +1,6 @@
 ---
-title: "UMLPS1"
-author: "Becky"
+title: "UML PS1"
+author: "Becky Lau"
 date: "October 10, 2019"
 output: html_document
 ---
@@ -12,15 +12,23 @@ library(tidyr)
 library(ggplot2)
 ```
 
-## R Markdown
+## 1: Obtain a dataset
 
-```{r data_uml}
+This is data from a working paper about how people overestimate the effectiveness of communication.
+Participants in the experiment were randomly assigned to be a "speaker" who spoke phrases to convey a certain meaning, or the "listener" who tries to identify the meaning being conveyed. Each phrase has four possible meanings, and in each round, one meaning is communicated. 
+
+
+```{r get data}
 data <- read.csv(file="C:/Users/Keysar Lab/Dropbox/becky_2019/yanting pragmatics/export/data_uml.csv", header=TRUE)
 ```
 
-## Including Plots
+## 2 & 3: Generate visualization
 
-You can also embed plots, for example:
+I measured the actual number of phrases that were successfully communicated (actual accuracy, x-axis) as well as the estimated number of phrases that were successfully communicated (estimated accuracy, y-axis). 
+
+Both speakers and listeners in the experiment estimated the number of phrases successfully communicated. The pink points pit listeners' estimated accuracy with actual accuracy, while the blue points pit speakers' estimated accuracy with actual accuracy. 
+
+The black diagonal line (x=y) represent perfect calibration, where estimated accuracy = actual accuracy. I observed that most datapoints lie above the perfect calibration line, indicating that most participants were overconfident about communication accuracy. Additionally, it seems that listeners were slightly more confident than speakers (pink dots are positioned higher up than blue).
 
 ```{r plots}
 
@@ -34,15 +42,60 @@ scatterplot_chi<- ggplot(scatter_data_chi, aes(x=correct_chilisten, y=can_combin
   geom_jitter()+
   geom_smooth(method = "lm")+
   geom_abline(intercept = 0, slope = 1) +
-  scale_x_continuous(name = "Chinese listeners' actual accuracy",breaks=0:12)+
+  scale_x_continuous(name = "Actual accuracy",breaks=0:12)+
   scale_y_continuous(name = "Estimated accuracy",breaks=0:12)+
   coord_cartesian(xlim=c(0,12),ylim=c(0, 12))+
   theme(legend.text=element_text(size=rel(1)))+ 
-  theme(text = element_text(size = 20))+
+  theme(text = element_text(size = 10))+
   theme(legend.position="bottom")+ 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 plot(scatterplot_chi)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## 4 & 5: Central tendency & variation
+
+Below I generate histograms as well as calculate mean, median, and SD of three key variables:
+
+(1) correct_chilisten: Actual accuracy (range from 0 - 12)
+Observations: Approximately normally distributed
+
+(2) can_chilisten: Estimated accuracy given by the listener (range from 0 - 12)
+Observations: Skewed to the left. Most listeners thought more than half of the phrases were correct.
+
+(3) can_chispeak_chi: Estimated accuracy given by the speaker (range from 0 - 12)
+Observations: Slightly skewed to the left. Most speakers thought more than half of the phrases were correct.
+
+Overall, I also observed that means and medians of the estimated accuracies are higher than that of actual accuracies, which shows support for my theory that people generally overestimate how well they communicate. The spread of the data was relatively large. 
+
+```{r descriptives}
+mean(data$correct_chilisten)
+median(data$correct_chilisten)
+sd(data$correct_chilisten)
+hist(data$correct_chilisten, ylim = c(0, 50))
+
+mean(data$can_chilisten)
+median(data$can_chilisten)
+sd(data$can_chilisten)
+hist(data$can_chilisten,ylim = c(0, 50))
+
+mean(data$can_chispeak_chi)
+median(data$can_chispeak_chi)
+sd(data$can_chispeak_chi)
+hist(data$can_chispeak_chi,ylim = c(0, 50))
+
+```
+
+## Critical thinking
+
+1. Visual EDA can effectively help us spot problematic outliers. Numeric EDA is especially good for understanding central tendencies. Both visual and numeric EDA can help us identify the distribution of the data, although visual EDA may be more helpful for understanding the general shape of the data (e.g. is it a quadratic or linear function?), while numeric EDA can quantify the spread/variance. 
+
+2. The first graph is bad because truncating the y-axis dramatically overstates the increase in high school graduation rates. By using books to represent the bars, it also confuses the reader further because it is unclear whether the number of books actually mean anything. The second graph is bad because it lumps a lot of unrelated news sources in the non-fox category (yellow bars). This confuses readers because it is unclear whether Democrats trust all non-fox sources more than fox. The reversed direction of the yellow bars makes the graph even more unintuitive. It seems that leaving out the yellow bars would make the graph easier to comprehend.   
+(graph 1: https://cms.qz.com/wp-content/uploads/2015/12/cwxb5crwwaekaib-large.jpg?quality=75&strip=all&w=620&h=310&crop=1) (graph 2: https://getdolphins.com/wp-content/uploads/2018/02/Screen-Shot-2017-12-20-at-12.19.42-PM.png)
+
+
+3. The first graph is good because it clearly labels what the line represents (countries with smallpox cases), and also indicates the number of countries it is drawing data from. It draws attention to the dramatic drop in smallpox cases in recent history. The second graph is good because it clearly states what the survey question is so readers can easily interpret the findings (sometimes data is disorted by how the question is worded so it's always good to check the survey question). It clearly labels what the tick marks represent. In both graphs, using a line graph to represent time-series data also makes intuitive sense.  (graph 1: https://s3-eu-west-1.amazonaws.com/static.gapminder.org/GapminderMedia/wp-uploads/20180313121209/smallpox1.png) (graph 2: http://acasignups.net/sites/default/files/gallup_q1_2016.jpg)
+
+4. EDA is helpful because people are pretty good at recognizing patterns in data. Without understanding the data through EDA, model-fitting can become misleading, as the same analysis can give rise to the same output for drastically different datasets (e.g. quadratic vs. linear functions, presence of outliers).
+
+5. An example of "exploratory" analysis is visualizing data with a plot. An example of "confirmatory" analysis is fitting a linear model. Exploratory analysis is an "attitude". It recognizes the importance of having a human with flexibility in thinking and pattern recognition abilities for understanding data, especially when there are unanticipated patterns to find. Confirmatory analysis is more "routine" and is easier to computerize. 
