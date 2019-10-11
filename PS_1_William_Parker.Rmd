@@ -1,0 +1,297 @@
+---
+title: 'Problem Set #1: Exploratory Data Analysis'
+author: "William Parker"
+subtitle: Unsupervised Machine Learning (40800) Autumn 2019
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
+  html_notebook:
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+---
+
+# Exploration & Computation 
+
+```{r library}
+library(tidyverse)
+```
+
+## 1. Obtain a dataset (preferably of substantive interest/domain expertise).
+
+### Introduction
+I have created a cleaned analysis file from the [SRTR dataset](https://www.srtr.org/about-the-data/the-srtr-database/), a comprehensive national transplant registry.This file contains data on the "Status" of heart transplant candidates at the time they were initially placed on the waitlist. Status level confers priority for transplantaion, higher status leads to higher priority. The criteria to meet each Status level are somewhat complicated (so I'll omit details), but overall is determined by the treatment the candidate is prescribed by their physician.
+
+In october 2018, the rules determining what treatments lead to which status changed substantially. I made these visualizations as part of an active research project where I am trying to determine the impact of the policy change on the treatment practices.
+```{r read_in_final_sample, message = FALSE}
+final_sample <- read_csv("final_sample.csv") %>%
+  mutate(month = zoo::as.yearmon(list_date),
+         treatment = factor(treatment, 
+                            levels = c("None", "Exception",
+                                       "Low-dose Inotropes", "LVAD",
+                                       "High-dose Inotropes", "IABP", 
+                                       "other MCS", "ECMO"))
+  ) %>% select(PX_ID, list_date, month, status, treatment, policy)
+
+final_sample
+```
+
+`policy` is a variable that identifies a pre-policy shift cohort (Dec 2017-May 2018) and a post-policy shift cohort (Dec 2018-May 2019) of equal durations. It's `NA` for candidates listed between the two cohorts.
+
+
+## 2. Choose a visual technique to illustrate your data (e.g., barplot, histogram, scatterplot). 
+
+I will start with a histogram of status level for each of my policy cohorts. I also think trends over time are important, so I will make scatter/line plots that show the count of treatments by month
+
+## 3. Now generate and present the visualization and describe what you see. 
+
+### Figure 1: Predicted and Observed Status Distribution in the New US Heart Allocation System
+```{r figure_1}
+final_sample %>% 
+  filter(is.na(policy) == FALSE) %>% # remove candidates listed outside the two cohorts 
+ggplot( aes(x = factor(status))) +
+  geom_bar() +
+  facet_grid(.~policy) +
+  labs(
+    x = "",
+    y = "Number of Candidates") +
+  theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+Looks like the distribution of Status shifted substantially in response to the policy. Status 1, 2 are higher than expected (these are very high priority statuses that get candidates transplanted quickly). 
+
+
+
+### Figure 1 (alt): Predicted and Observed Status Distribution in the New US Heart Allocation System
+
+I suspect that treatment practices may have shifted to explain the change in status distribution, so I add color to the histogram to represent the treatments
+```{r figure_1_color_treat}
+treatment_pal <- "Paired"
+treatment_pal_dir <- 1
+
+ggplot(final_sample %>% filter(is.na(policy) == FALSE), aes(x = factor(status), fill = treatment)) +
+  geom_bar(color = "grey") +
+  facet_grid(.~policy) +
+  labs(
+    x = "",
+    y = "Number of Candidates") +
+  scale_fill_brewer(palette=treatment_pal, direction = treatment_pal_dir, guide = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+That looks good! It's clear that ECMO, IABP, and LVAD use went up and high-dose and low-dose inotropes went down. This will allow me to form some more formal hypotheses from broader ideas I had about the possible impact of the policy before EDA.
+
+
+### Figure 2: Trends in treatments used to list adult heart transplant candidates during the transition to the new heart allocation policy
+
+Now I want to plot the trend over time in treatments and make sure my cohorts are reasonable choices (specifically that they represent steady state periods, rather than periods of rapid practice change)
+```{r ITSA_plot}
+
+by_month <- final_sample %>%
+  group_by(policy, month) %>%
+  count(treatment) %>%
+  mutate(total_per_month = sum(n)) %>%
+    ungroup () %>%
+  mutate(month = factor(month),
+         percentage_per_month = 100*n/total_per_month,
+         for_shade = 50)
+
+policy_switch <- which(levels(by_month$month) == "Oct 2018")
+
+pre_policy_start <- which(levels(by_month$month) == "Dec 2017")
+
+pre_policy_end <- which(levels(by_month$month) == "Apr 2018")
+
+post_policy_start <- which(levels(by_month$month) == "Dec 2018")
+
+post_policy_end <- which(levels(by_month$month) == "Apr 2019")
+
+ggplot(by_month, aes(x = month, y = percentage_per_month, color = treatment, group = treatment)) + 
+  geom_line() + 
+  geom_point() + 
+  geom_vline(aes(xintercept = policy_switch, linetype = "Policy implemented")) + 
+  geom_ribbon(data = by_month %>% filter(policy == "Dec 2017 - May 2018 (Pre-Policy)"),
+            aes(x = month, ymin = 0, ymax = Inf, fill = "Pre-policy cohort"), alpha = 0.02, color = NA) +
+  geom_ribbon(data = by_month %>% filter(policy == "Dec 2018 - May 2019 (Post-policy)"),
+            aes(x = month, ymin = 0, ymax = Inf, fill = "Post-policy cohort"), alpha = 0.02, color = NA) +
+  scale_color_brewer(palette=treatment_pal, direction = treatment_pal_dir) +
+  labs(
+    x = "Month of Listing",
+    y = "Percentage Candidates (%)",
+    linetype = "",
+    fill = "") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_linetype_manual(values = c("dashed", "dotted", "solid")) +
+  scale_fill_manual(values = c("blue", "red"))
+
+
+```
+
+Visually this looks good, treatment rates in the post and pre policy cohorts are fairly stable. More so in the pre policy group, but I can't avoid the variability in the post policy cohort as that is all the data I have at the moment.
+
+
+## 4. Calculate the common measures of central tendency and variation, and then display your results. 
+
+
+### Percentage of candidates treated with each treatment type by policy cohort
+```{r treatment_rates_by_cohor}
+comma <- function(x){
+  format(x, digits = 3, big.mark = ",")
+}
+
+
+final_sample %>%
+  group_by(policy) %>%
+  filter(!is.na(policy)) %>%
+  count(treatment) %>% 
+  mutate(total_treated = sum(n),
+         percent_treated = paste0(format(100*n/total_treated, digits = 2), "%")) %>%
+  select(policy, treatment, percent_treated) %>%
+  pivot_wider(names_from = policy, values_from = percent_treated)
+
+```
+This distribution represents the central tendency of the treatment variable for each cohort.
+
+### Standard deviations of monthly treatment rates for each cohort
+```{r sd_monthly_rates}
+comma <- function(x){
+  format(x, digits = 3, big.mark = ",")
+}
+
+
+by_month %>%
+  group_by(policy, treatment) %>%
+  filter(!is.na(policy)) %>%
+  select(policy, treatment, percentage_per_month) %>%
+  summarise(sd_tx_rate = sd(percentage_per_month)) %>%
+  pivot_wider(names_from = policy, values_from = sd_tx_rate)
+```
+The standard deviation of each treatment rate by month. The fact that the standard deviations are generally low (here on the % scale) implies that the treatment rates were fairly numerically stable in both cohorts
+
+## 5. Describe the numeric output in substantive terms, e.g., 
+
+### a. What do these numeric descriptions of data reveal? 
+
+I think that the numeric distribution of the treatment patterns clearly demonstrate large shifts in heart transplant center treatment patterns after the policy was implemented
+
+### b. Why is this important? 
+
+The new policy was designed and simulated under the assumption that treatment practices would be stable. this is clearly not the case, so this means the policy is less likely to improve heart allocation in the way expected (goal was to improve allocation to the sickest heart transplant candidates)
+
+### c. What might you infer about the distribution or spread of the data? Why? 
+
+As stated above, the distribution of treatment rates clearly indicates that treatment patterns have changed dramatically in response to the policy.
+
+The monthly rates have low variance in each cohort, which is encouraging that practices have settled down enough after the policy change to do a solid comparision to the pre-policy cohort.
+
+# Critical Thinking 
+
+## 1. Describe the different information contained in/revealed by visual versus numeric exploratory data analysis. (Hint: Think of different examples of each and then what we might be looking for when leveraging a given technique). 
+
+Visual techniques are best when the underlying distribution of the variables in the data is unknown the relationship between the variables are unknown. Many of the numeric EDA approaches are creating a series of sample estimators for population parameters of the distribution that may have a useful interpretation
+
+For example Anscombe's quartet:
+```{r}
+anscombe %>%
+ pivot_longer(everything(),
+   names_to = c(".value", "set"),
+   names_pattern = "(.)(.)"
+ ) %>%
+  ggplot(aes(x, y)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  facet_grid(~set, )
+```
+
+```{r}
+anscombe %>%
+ pivot_longer(everything(),
+   names_to = c(".value", "set"),
+   names_pattern = "(.)(.)"
+ ) %>%
+  group_by(set) %>%
+  summarise( x_mean = mean(x),
+             y_mean = mean(y),
+             x_sd = sd(x),
+             y_sd = sd(y))
+```
+
+Numerically,the sample means and variances of X and Y are the same despite clearly coming from different distributions.
+
+
+When fitting simple linear models to each set, we find suprising results
+```{r}
+anscombe %>%
+ pivot_longer(everything(),
+   names_to = c(".value", "set"),
+   names_pattern = "(.)(.)"
+ ) %>%
+  group_by(set) %>%
+  nest() %>%
+  mutate(model = map(data, ~lm(y ~ x, data = .)),
+         tidy = map(model, broom::tidy)) %>%
+  unnest(tidy, .drop =T) %>%
+  select(set, term, estimate, std.error) %>%
+  pivot_wider(id_cols = set, names_from = term, values_from = c(estimate, std.error)) %>%
+  select(set, `estimate_(Intercept)`, `std.error_(Intercept)`, estimate_x, std.error_x)
+```
+The estimates of the intercept and slope are nearly identical, along with their standard errors! Multiple assumptions of linear models are violated for set 2-4, but this isn't obvious until we inspect the residuals etc.
+
+
+## 2. Find (and include) two examples of “bad” visualizations and tell me precisely why they’re bad. 
+
+
+### Bad viz 1
+![](bad_vis.png)
+
+
+This pie chart is terrible because it's impossible to link legend elements to wedges in the pie given the tons of colors. Also the biggest category is "other".
+
+
+### Bad viz 2
+![](bad_vis_2.png)
+
+
+This visualization is bad because of the inappropriate cholorpleth, implies geographic distribution of american race when in reality this is a trend over time plot.
+
+## 3. Find (and include) two examples of “good” visualizations and tell me precisely why they’re good. 
+
+### Good vis #1
+![](good_vis_1.png)
+
+This is a cumulative incidence of the primary outcome (death from cardiovascular causes or new myocardial infarction) estimated by kaplan-meier function in the New England Journal of Medicine. I like it because it is clearly labeled and has all the relevant data (including the number at risk table at the bottom, which lets you know how many patients remained in the trial at that time). I also like how the figure includes a zoomed-in plot and one with 0-100% as the axis, it gives you a sense of scale of the effect while also allowing you to see detail in how/when the two curves separate. I think it could be better with 95% CI of the cumulative incidence estimates (which would widen over time), but that's not standard in medicine
+
+### Good vis #2
+![](good_vis_2.gif)
+
+I chose the famous french army invasion of russia visualization. I think it's great because it conveys so much information: the dwindling size of the army, geographic location, invasion/retreat (color), and temperature during retreat (plot at bottom). Also it is very intuitively readable despite the density of information, really demonstrates how badly the invasion went and one reason why so many died during retreat (temp)
+
+## 4. When might we use EDA and why/how does it help the research process? 
+
+I use EDA at the beginning of any project and it is absolutely critical to help me refine research questions.
+
+To give an exmaple from my own work, I was interested in studying the effect of competition with nearby centers on how heart transplant programs behave. Specifically, my idea was that competition lead to more gaming, but this was still very general. So I quantified the rate of "potential overtreatment" in each donor service area (local areas of organ allocation) and made a chloropleth. This revealed high rates of potential overtreatment in dense urban areas, often with multiple heart transplant centers. This EDA lead me to the confirmatory analysis of fitting a multilevel logsitic regression (random effect for each center) for association of the "number of centers in donor service area" with potential overtreatment, controlling for differences in patient level characteristics between donor service areas. The confirmatory analysis formally answered the question that wasn't fully formed until I performed the EDA.
+
+![](cholopleth_heart.png)
+
+
+## 5. What did John Tukey mean by “confirmatory” versus “exploratory”? Give me an example for each. 
+
+Tukey claims that the cannonical research paradigm (question -> design -> collection -> analysis -> answer) is incomplete, as it omits question generation from the process and assumes that the perfect design for every question exists and is practical. He views EDA as essential to "finding the question" and specifying research design. He recognizes that question and design are fundamentally intertwined, as the available suite of study designs constrain the set of possible questions. 
+
+Tukey describes exploratory data analysis an "attitude, a flexibility, and some graph paper". He does not view EDA as "a bundle of techniques". This allows the researcher to explore the data visually and appreciate unanticipated patterns. However Tukey points out that exploratory data anlaysis is not sufficient to answer questions, confirmatory analysis with proper designs identified by EDA is also necessary. 
+
+### EDA examples
+
+1. the dramatic increase in LVAD use as demonstrated in my plots above. I did not anticipate this trend until I constructed an exploratory time series plot
+
+2. creating multiple scatter plots of y vs. x stratified by Z (via color or multiple plots) to visually identify any potential interaction between Z and the effect of X on Y.
+
+### Confirmatory examples
+
+1. multi-level multinomial logistic regression to analyze the association of policy on treatment, controlling for center effects and atient level variables
+
+2. linear regression with x modeled as a restricted cubic spline with an interaction term with Z.
+
