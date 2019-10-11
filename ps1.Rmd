@@ -1,0 +1,48 @@
+---
+title: "UMLPS1"
+author: "Becky"
+date: "October 10, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+## R Markdown
+
+```{r data_uml}
+data <- read.csv(file="C:/Users/Keysar Lab/Dropbox/becky_2019/yanting pragmatics/export/data_uml.csv", header=TRUE)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r plots}
+
+scatter_data_chi <- data %>% 
+  select(Version,starts_with("can"), starts_with("correct"), -starts_with("can_minus_correct"))%>%
+  gather(key,can_combined_chi,-can_englisten, -can_chispeak_eng, -correct_englisten, -correct_chilisten, -Version)%>%
+  mutate(key = if_else(key == "can_chilisten","Listeners' estimated accuracy","Speakers' estimated accuracy"))
+
+scatterplot_chi<- ggplot(scatter_data_chi, aes(x=correct_chilisten, y=can_combined_chi, color=key, shape=key)) + 
+  geom_point(position = position_dodge(width = 0.3))+
+  geom_jitter()+
+  geom_smooth(method = "lm")+
+  geom_abline(intercept = 0, slope = 1) +
+  scale_x_continuous(name = "Chinese listeners' actual accuracy",breaks=0:12)+
+  scale_y_continuous(name = "Estimated accuracy",breaks=0:12)+
+  coord_cartesian(xlim=c(0,12),ylim=c(0, 12))+
+  theme(legend.text=element_text(size=rel(1)))+ 
+  theme(text = element_text(size = 20))+
+  theme(legend.position="bottom")+ 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+plot(scatterplot_chi)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
