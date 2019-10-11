@@ -1,0 +1,90 @@
+---
+title: "PS1"
+author: "Rui"
+date: "10/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Data set for the Google Play Store is obtained through Kaggle <https://www.kaggle.com/lava18/google-play-store-apps>
+
+2. A bar plot is used to compare the mean of rating for game and non game apps. And a histogram is used to look at the the distribution of number of reviews received by 
+
+``` {r}
+library(tidyverse)
+library(skimr)
+
+# I want to know if gaming apps are popular in the GOOGLE play store and 
+# review their number of installs
+
+#Load the google play store data 
+appdata <- read.csv(file="/Users/ruihe/Documents/UML/PS1/googleplaystore.csv")
+summary(appdata)
+
+appdata_sub <-appdata %>%
+  dplyr::select(App, Rating,Installs, Reviews, Category) %>%
+  mutate(game = ifelse(Category=="GAME","game","others"),
+         Reviews = as.numeric(Reviews)) %>%
+  drop_na()
+  #mutate(category = case_when(Category == "GAME" ~ "Game",
+  #                            Category == "Dating" ~"Dating",
+  #                            Category != ("GAME"|"Dating"), ~"Others")) %>%
+
+
+summary(appdata_sub)
+```
+
+3. Two graphs showed that the rating and distribution reviews for both game and non game apps are very similar, suggesting gaming apps are not more popular than non-game apps.
+
+``` {r}
+#bar graph of mean ratings for game and non game apps
+appdata_sub %>%
+  group_by(game) %>%
+  summarize(mean_rating = mean(Rating, na.rm = TRUE))%>%
+  ggplot()+
+  geom_bar(aes(x = game, y = mean_rating), stat = "identity") +
+  labs(x = 'Game', y = "Mean Rating")
+
+#number of reveiws given to game vs. non game apps
+  ggplot(data = appdata_sub) + 
+    geom_histogram(aes(x=Reviews), binwidth = 500) +
+    facet_wrap(~game, scales = "fixed", ncol = 2) +
+    labs(x="Number of Review", y = "Number of Apps",
+         title = "Distribution of Reviews by Game vs Non Game")
+
+```
+
+4. Mean, median and std of ratings for game/nongame apps
+``` {r}
+
+appdata_sub%>%
+group_by(game)%>% 
+summarise(Mean=mean(Rating), Max=max(Rating), Min=min(Rating), Median=median(Rating), Std=sd(Rating))
+
+```
+##Critical thinking
+
+1. Visualization of data shows the qualitative trends and patterns in a more straight forward manners whereas numeric EDA shows a quanitative perspective of the data. 
+
+2. Bad visualizations 
+![](/Users/ruihe/Documents/UML/PS1/bad1.png)
+Example 1: The graph showed the trending topics in the news - I think it is a bad example of visualization because 1. a lot of excessive informaiton is showed with the number of color presented in the graphs. 2. Although the author tried to emphasize the topics by putting labels at the color blocks with large area, some of the color blocks (e.g. the purple one between May-Jun) are unlabeled. 
+
+![](/Users/ruihe/Documents/UML/PS1/bad2.png)
+Example2: This example is actually not very bad. Something that could be confusing is to have the color blocks that are too compact and the relative position with relation to the time is not straight forward.The ticks for the timeline is weridly chosen as 15 days, and therefore the date of game requires calculations based on the timeline, which missed the purpose of data visualization. 
+
+3.Good visualization
+![](/Users/ruihe/Documents/UML/PS1/good1.png)
+Example 1: The radar plot has for overlapping, half-transparent graphs for 4 teams. The scale is clearly labeled and it directly compares the advantages and disadvantages of each team on the 6 aspects listed. Would probably be better if the shared space is more clear on which team is worse, but overall it is informative. 
+
+![](/Users/ruihe/Documents/UML/PS1/good2.png)
+Example 2: This graph showed the most talked abot topics grouped by political identity, which showed nicely what the most talked about topics are and how they varied depending on political affiliation. Some concern about funnel plot is that it can be heavily biased by the large number and unequal sample sizes between each groups. However, the caption of this graphs (not included) showed a similar sample sizes and make these charts more comparable.  
+
+4. EDA is good for setting up the baselines of the observations we intend to measure and look for possible previously unpredicted trends and patterns. It helps at the early stage of research by providing a better understanding of the population or the data samples, for example to range of the data or the distribution of the data, so that we know the intended measurements are reasonable to used for the samples. Also, it may establish a baseline for the measurement.EDA is also helpful when there was no certain directional prediction about variables in the data, and can be used to stimulate questions and discussions about the unforseeable trends and patterns.
+
+5.In John Tukey's "We Need Both Exploratory and Confirmatory" (1980) paper, he proposed that exploratory data aalysis is more of "an attitude, a flexibility and a reliance on display, not a bundle of techniques" whereas the confirmatory data analysis is more a set of statistical techniques that can computerize answers for some circumscried questions. 
+For example, if we understand the effect of some drug on an deadly illness, we may first want to do EDA to understand the average life-expectancy of the patients with the traditional treatements, and examine the causes of dead to establish some basic parameters people can measure within a patients. A confirmatory data analyasis would be having a more refined and practical question, such as whether a drug would extend the life-expectancy of a patient by comparing measurments from the control group and the treatment group with some statistical test. 
+
