@@ -1,0 +1,188 @@
+---
+title: "hw01"
+author: "Arun Pandian"
+date: "10/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Exploration and Computation
+
+A subset of the dimensions in the American National Election Studies 2016 pilot study dataset is used here to perform Exploratory Data Analysis that may shed some insight into certain aspects of the 2016 elections.
+
+Relevant aspects of the data are loaded, specifically dimensions related to how liberal/conservative people perceive the Demoratic and Republican party. Intuitively, this is an intresting question since it's possible that people who identify themselves are strong liberals may not have in early 2016 seen the democratic party as strongly liberal given that a centrist candidate relative to Bernie Sanders(Hilary Clinton) was the preferred nominee while on the other hand the Republican party and voters were dealing with the Trump phenomenon, whose ideology was hard to categorize(He ran to the left of Hilary on foreign internvention in the Middle East, for instace) but nevertheless, not welcome by the Republican party establishment. Additionally, if the polarization of the demographic along political lines is true, then it's possible that voters of a particular political orientation perceive the "other party"" as  being too liberal or conservative. The orientation of the voter consists of 7 categories(along with their quantification) as follows: 
+
+* Very liberal (1)
+* Somewhat liberal (2)
+* Closer to liberal (3)
+* Neither liberal nor conservative (4)
+* Closer to conservative (5)
+* Somewhat conservative (6)
+* Very Conservative (7)
+
+For the purpose of this preliminary analysis, I binned together "Somewhat liberal" and "Closer to liberal" ("Somewhat/Leaning towards Liberal"") into one category and likewise "Somewhat conservative" and "Closer to conservative" into one category("Somewhat/Leaning towards Conservative").
+
+#### 1. Loading and filtering the data set
+
+```{r load data, echo=TRUE, results = 'hide', message=FALSE, warning=FALSE}
+#load library and dataset
+library(tidyverse)
+library(skimr)
+library(cowplot)
+NESdta <- read_csv("anes.csv")
+# Load data with the required dimensions
+NESdta_sub <- NESdta %>%
+  dplyr::select(lcself, lcd, lcr, birthyr) %>% #mark voters with missing/invalid/irrelevant entries
+  mutate(age = 2016 - birthyr,  #create categorial labeling for visual use
+        orientation = case_when(lcself == 1 ~ "Very liberal voters",
+                             (lcself == 2  | lcself ==3) ~ "Somewhat/Lean towards liberal voters",
+                             lcself == 4 ~ "Neither liberal nor conservative voters", (lcself == 5 | lcself == 6 ) ~ "Somewhat conservative/Lean towards conservative voters",
+                             lcself == 7 ~ "Very Conservative voters"
+                          ), #store the numerical values of the perceptions of both parties for visual use
+        lcdn = lcd, lcrn  = lcr,  #create categorial labeling for visual use
+        lcd = case_when(lcd == 1 ~ "1: Very Liberal",
+                             (lcd == 2  | lcd ==3) ~ "2-3: Somewhat/Lean towards Liberal",
+                             lcd == 4 ~ "4: Neither liberal nor Conservative", (lcd == 5 | lcd == 6 ) ~ "5-6: Somewhat/Lean towards Conservative",
+                             lcd == 7 ~ "7:  Very Conservative"
+                          ),
+        lcr = case_when(lcr == 1 ~ "1: Very Liberal",
+                             (lcr == 2  | lcr ==3) ~ "2-3: Somewhat/Lean towards Liberal",
+                             lcr == 4 ~ "4: Neither Liberal nor Conservative", (lcr == 5 | lcr == 6 ) ~ "5-6: Somewhat/Lean towards Conservative",
+                             lcr == 7 ~ "7: Very Conservative"
+                          )
+        
+        
+        ) %>%
+  #filter out voters with missing/invalid/irrelevant entries
+  drop_na()
+```
+#### 2. Choosing to display the information in bargraphs and displaying them
+
+Since we are building how different groups of voters perceive the two parties on a categorial basis, bargraph is a natural fit. So we build the bar graphs for the different groups on how they perceive each party.
+```{r eval=TRUE, echo = TRUE, warning=FALSE}
+hist1 <- ggplot(data = NESdta_sub) +
+  geom_bar(aes(x = lcd, color = "white", fill = "coral")) +
+  labs(x = "Perception of the democratic party",
+       y = "Number of Respondents",
+       title = "Perception of the Democratic party") +
+  facet_wrap( ~ orientation, scales='free_y', ncol = 1)
+hist2 <- ggplot(data = NESdta_sub) +
+  geom_bar(aes(x = lcr, y=,color = "white", fill = "coral")) +
+  labs(x = "Perception of the republican party",
+       y = "Number of Respondents",
+       title = "Perception of the Republican party") +
+  facet_wrap( ~ orientation, scales='free_y', ncol = 1)
+
+```
+#### 3. Bar graph visualizations and observations
+
+```{r  Histograms, fig.height = 8, fig.width = 13, fig.align = "center"}
+#I have put the images side by side but the x-axis for easy comparision, but the legend doens't appear properly on the markdown document, however it appears fine inside R studio
+plot_grid(hist1, hist2)
+```
+```{r  Histogram1, fig.height = 8, fig.width = 13}
+#Since the side by side images don't appear properly on markdown, I have put the images one below the other as well
+hist1
+```
+```{r  Histogram2, fig.height = 8, fig.width = 13}
+hist2
+```
+Looking at the graphs side by side the following observations can be made:
+
+* A good chunk of very liberal voters may think the Democratic Party wasn't on par with them and found them to be somewhat/leaning towards liberal but suprisingly a large proportion of the very conservative voters sampled felt similiarly that the Republican party was somewhat/leaning towards conservative. This is suprising given the general rightward shift of the country starting in the neoliberal years.
+* Most voters who are very liberal and a substantial amount of voters who are somewhat/leaning towards liberal may find the Republican party too conservative and likewise the same trend is observed with very conservative and a substantial amount of voters who are somewhat/leaning towards conservative who feel the democratic party is too liberal. This may suggest a political polarization in the populace.
+* A large chunk of voters who aren't either conservative or liberal also seem to think that both the parties are neither conservative nor liberal. It's hard to intrepet this result. It's possible this perception informs their political orientation.
+
+#### 4. Numerical Analysis
+Since the dependent variable is really categorial, numerical explanatory analysis might be too insightful. Regardless, below is the summary of the dataset, grouped by political orientation:
+```{r Skim, echo = TRUE}
+skim(NESdta_sub %>%dplyr::select(lcself, lcdn, lcrn, orientation) %>%
+  group_by(orientation))
+```
+From the above table:
+
+For Neither liberal nor conservative voters:
+
+  + Mean and SD in perception of the democratic party: 3.13 and 1.32
+  + Mean and SD perception of the republican party: 4.87 and 1.55
+  
+Somewhat/Lean towards liberal voters:
+
+  + Mean and SD in perception of the democratic party: 2.46 and 0.95
+  + Mean and SD in perception of the republican party: 6.01 and 1.42
+  
+Somewhat/Lean towards conservative voters:
+
+  + Mean and SD in perception of the democratic party: 2.05 and 1.45
+  + Mean and SD in perception of the republican party: 5.09 and 1.44
+  
+Very liberal voters:
+
+  + Mean and SD in perception of the democratic party: 2.31 and 1.19
+  + Mean and SD in perception of the republican party: 6.21 and 1.56 
+   
+Very conservative voters:
+
+  + Mean and SD in perception of the democratic party: 1.66 and 1.54
+  + Mean and SD in perception of the republican party: 4.79 and 1.64
+  
+
+#### 5. Implications of this numerical analysis:
+If we imagine the orientation of a party to lie on a continous spectrum from 1 to 7 (although in reality they are discrete variables), we can make the following observations:
+
+* On average, Very Liberal and Very Conservative voters may perceive the opposite party to be too conservative or 
+  too liberal respectively, relative to more moderate counterparts. 
+
+* Voters who are neither conservative nor liberal seem to perceive the democratic party to be relatively liberal
+  to them as well the republican party to be relatively conservative to them in about the same magnitude possibly,   although the higher variance in their perception of the republican party relative to the democratic party   
+  suggests otherwise.
+
+* The relatively high variance in each of these measures suggest a high spread in perception of other party even    amongst voters of the same orientation
+
+
+### Critical Thinking:
+
+####1. 
+Visual exploratory data analysis allows us to gauge visually the broad charecteristics of the data, to check if the assumptions of a model developed to analyze the data makes sense, and if not to think of alternative assumptions/modelling. Numerical exploratory data analysis helps to calculate central tendancy and variation(spread) of the potential dependent variable upon the explanatory variables to help understand the data in a more accurate manner. This can also help in outlier detection for values several standard deviations from the mean. 
+
+####2. 
+Bad Visualizations:
+
+![](bad1.jpg "PIE CHART")
+
+A lot of textual explanation can render the above chart redundant but is necessary to infer conveyed information. The legend colors are not intuitive, the white pattern in the middle seems to signify something when it really doesn't. A barchart would have been much better in this case and then no colored legend would have been necessary.It's also hard to read big numbers on colored backgrounds. Approximations could have been used (eg. 201 M).
+
+
+![](bad2.png "Bad Chart")
+
+It's nearly impossible to infer much from this image although the choice of colors is suggestive of a cheerful message. If the intention is to breakdown markershare, a pie chart would have been better than this as it's hard to infer quantitative information from this chart(the ring parts don't seem to add upto one complete ring). Addtionally, all the extra colors other than that for the three phone makers are unexplained. 
+
+####3. 
+
+Good visualizations:
+
+![](math.jpg "MATH scores versus Income")
+![](reading.jpg "READING scores versus Income")
+![](writing.jpg "WRITING scores versus Income")
+![](allscores.jpg "SAT scores versus Income")
+
+The above set of four images is great because of 
+
+* The sharing of some of the visual qualities of the images (the strongly correlated increasing dependent variable in all graphs, the consistency of the color coding between the induvidual images and the cumulative image). 
+* The information is presented neatly using the minimum amount of detail. 
+* One color is used for each section of the SAT test, and the x-axis is segmented into income groups that make sense. 
+* In the induvidual graphs the maximum score for each bar adds emphasis to the point being made.
+* As soon as one looks at the image, the argument it is making is clear(strong corelation between income and SAT scores).
+
+####4.
+According to Tukey we use EDA in all stages of the research process from question formation to design of Experiment to data collection monitoring to analysis. For instance, in the question formation stage it's related to exploring past data to get a sense of what questions are answerable. It helps the research process because as Tukey puts it, "the formulation of the question itself involves what can be ... asked, what designs are feasible [and] ... how likely a design is to  give a useful answer". He suggests for this purpose, EDA is helpful, epspecially to it's two components as he describes it, "inchoate insight and explorations of past data". 
+
+
+
+####5. 
+Exploratory Data Analysis refers to an attitude invovled in preliminary analysis of data that leads to questions need to be asked, that can be possibly answered, and how data is going to be transformed by the assumptions that need to be made to answer those questions which need to be asked and can be possibly answered. For example: Checking the assumptions of a linear regression model visually by plotting out the data points to make sure a linear model makes sense, or perform some preliminary sample statistics to identify rogue points which may affect the regression curve too much.
+Confirmatory Data analysis refers to the usage of the set of statistical methods to check the validity of the evidence. Example: Calculating the confidence interval for a null hypothesis.
+

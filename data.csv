@@ -1,0 +1,50 @@
+"State","firearmRegRequired","permitReqToCarry","permitReqToPurchase","openCarryLegal"
+"California",true,true,true,
+"Connecticut",true,true,true,true
+"Hawaii",true,true,true,true
+"Maryland",true,true,true,true
+"Michigan",true,true,false,true
+"New Jersey",true,true,true,false
+"New York",true,true,true,false
+"Washington",true,true,false,true
+"Alabama",false,true,false,true
+"Alaska",false,false,false,true
+"Arizona",false,false,false,true
+"Arkansas",false,false,false,true
+"Colorado",false,true,false,
+"Delaware",false,true,false,true
+"Florida",false,true,false,false
+"Georgia",false,true,false,true
+"Idaho",false,false,false,true
+"Indiana",false,true,false,true
+"Iowa",false,true,true,true
+"Kansas",false,false,false,true
+"Kentucky",false,true,false,true
+"Louisiana",false,true,false,true
+"Maine",false,false,false,true
+"Massachusetts",false,true,true,true
+"Minnesota",false,true,true,true
+"Mississippi",false,false,false,true
+"Missouri",false,false,false,true
+"Montana",false,false,false,true
+"Nebraska",false,true,true,true
+"Nevada",false,true,false,true
+"New Hampshire",false,false,false,true
+"New Mexico",false,true,false,true
+"North Carolina",false,true,true,true
+"North Dakota",false,true,true,true
+"Ohio",false,true,false,true
+"Oklahoma",false,true,false,true
+"Oregon",false,true,false,true
+"Pennsylvania",false,true,false,true
+"Rhode Island",false,true,true,true
+"South Carolina",false,true,false,false
+"South Dakota",false,true,false,true
+"Tennessee",false,true,false,true
+"Texas",false,true,false,true
+"Utah",false,true,false,true
+"Vermont",false,false,false,true
+"Virginia",false,true,false,true
+"West Virginia",false,false,false,true
+"Wisconsin",false,true,false,true
+"Wyoming",false,false,false,true
